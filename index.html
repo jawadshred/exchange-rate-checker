@@ -23,6 +23,20 @@
       margin: 16px 0 6px;
       font-weight: 600;
     }
+    .select-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .select-row .field {
+      flex: 1;
+      min-width: 140px;
+    }
+    .select-row label {
+      margin-bottom: 6px;
+    }
+    select,
     input[type="number"] {
       width: 100%;
       padding: 10px;
@@ -99,10 +113,44 @@
 </head>
 <body>
   <h1>Exchange Rate Checker</h1>
-  <p>Enter the Google exchange rate and the shop's exchange rate, then check how far apart they are.</p>
+  <p>Exchange rates are fetched automatically from a free public API. Change the currencies below and the latest rate will populate the market rate field.</p>
 
-  <label for="googleRate">Google rate</label>
-  <input id="googleRate" type="number" step="any" min="0" placeholder="e.g. 1.12" />
+  <div class="select-row">
+    <div class="field">
+      <label for="baseCurrency">Base currency</label>
+      <select id="baseCurrency">
+        <option value="EUR">EUR</option>
+        <option value="USD">USD</option>
+        <option value="GBP">GBP</option>
+        <option value="JPY">JPY</option>
+        <option value="AUD">AUD</option>
+        <option value="CAD">CAD</option>
+        <option value="CHF">CHF</option>
+        <option value="CNY">CNY</option>
+        <option value="SEK">SEK</option>
+        <option value="NZD">NZD</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="targetCurrency">Target currency</label>
+      <select id="targetCurrency">
+        <option value="JPY" selected>JPY</option>
+        <option value="EUR">EUR</option>
+        <option value="USD">USD</option>
+        <option value="GBP">GBP</option>
+        <option value="AUD">AUD</option>
+        <option value="CAD">CAD</option>
+        <option value="CHF">CHF</option>
+        <option value="CNY">CNY</option>
+        <option value="SEK">SEK</option>
+        <option value="NZD">NZD</option>
+      </select>
+    </div>
+  </div>
+
+  <label for="googleRate">Market rate</label>
+  <input id="googleRate" type="number" step="any" min="0" placeholder="Loading rate..." />
+  <div class="note">Formula: (Market Rate − Shop Rate) / Market Rate × 100</div>
 
   <label for="shopRate">Shop rate</label>
   <input id="shopRate" type="number" step="any" min="0" placeholder="e.g. 1.08" />
@@ -110,17 +158,19 @@
   <button id="calculateBtn">Calculate percentage difference</button>
 
   <div id="result" class="result">Enter values and click the button.</div>
-  <div class="note">Formula: (Google Rate − Shop Rate) / Google Rate × 100</div>
+  <div class="note">This uses the free, keyless Frankfurter API to fetch the latest rate for the selected currency pair.</div>
 
   <div class="info-card">
     <h2>What the result means</h2>
-    <p><strong>Less than 2.5%</strong> means the shop rate is close to the Google rate.</p>
+    <p><strong>Less than 2.5%</strong> means the shop rate is close to the market rate.</p>
     <p><strong>Between 2.5% and 3%</strong> means the shop rate is moderately different.</p>
-    <p><strong>More than 3%</strong> means the shop rate is significantly different from Google.</p>
+    <p><strong>More than 3%</strong> means the shop rate is significantly different from the market rate.</p>
     <p>This helps you quickly judge whether the exchange shop rate is reasonable.</p>
   </div>
 
   <script>
+    const baseCurrencySelect = document.getElementById('baseCurrency');
+    const targetCurrencySelect = document.getElementById('targetCurrency');
     const googleRateInput = document.getElementById('googleRate');
     const shopRateInput = document.getElementById('shopRate');
     const resultEl = document.getElementById('result');
@@ -135,37 +185,64 @@
       resultEl.className = 'result ' + styleClass;
     }
 
+    function fetchMarketRate() {
+      const base = baseCurrencySelect.value;
+      const target = targetCurrencySelect.value;
+      setResult(`Loading latest ${base}/${target} rate...`, 'yellow');
+
+      fetch(`https://api.frankfurter.dev/v1/latest?from=${base}&to=${target}`)
+        .then(response => response.json())
+        .then(data => {
+          if (!data || !data.rates || !data.rates[target]) {
+            throw new Error('Invalid API response');
+          }
+
+          const rate = data.rates[target];
+          googleRateInput.value = rate.toFixed(4);
+          googleRateInput.placeholder = rate.toFixed(4);
+          setResult(`Latest ${base}/${target} rate loaded. Enter shop rate and calculate.`, 'green');
+        })
+        .catch(() => {
+          setResult('Could not fetch the latest rate. Please enter it manually.', 'red');
+          googleRateInput.value = '';
+          googleRateInput.placeholder = 'Enter market rate';
+        });
+    }
+
     function calculateDifference() {
-      const googleRate = parseFloat(googleRateInput.value);
+      const marketRate = parseFloat(googleRateInput.value);
       const shopRate = parseFloat(shopRateInput.value);
 
-      if (Number.isNaN(googleRate) || Number.isNaN(shopRate) || googleRate <= 0) {
+      if (Number.isNaN(marketRate) || Number.isNaN(shopRate) || marketRate <= 0) {
         setResult('Please enter valid positive values for both rates.', 'yellow');
         return;
       }
 
-      const diff = ((googleRate - shopRate) / googleRate) * 100;
+      const diff = ((marketRate - shopRate) / marketRate) * 100;
       const diffText = formatNumber(diff) + '%';
 
       if (diff > 3) {
-        setResult('Difference: ' + diffText + ' — Shop rate is far from Google rate.', 'red');
+        setResult('Difference: ' + diffText + ' — Shop rate is far from the market rate.', 'red');
       } else if (diff >= 2.5) {
         setResult('Difference: ' + diffText + ' — Shop rate is moderately different.', 'yellow');
       } else {
-        setResult('Difference: ' + diffText + ' — Shop rate is close to Google rate.', 'green');
+        setResult('Difference: ' + diffText + ' — Shop rate is close to the market rate.', 'green');
       }
     }
 
     calculateBtn.addEventListener('click', calculateDifference);
 
-    [googleRateInput, shopRateInput].forEach(input => {
-      input.addEventListener('keydown', event => {
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          calculateDifference();
-        }
-      });
+    shopRateInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        calculateDifference();
+      }
     });
+
+    baseCurrencySelect.addEventListener('change', fetchMarketRate);
+    targetCurrencySelect.addEventListener('change', fetchMarketRate);
+
+    fetchMarketRate();
   </script>
 </body>
 </html>
