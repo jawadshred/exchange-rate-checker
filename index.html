@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exchange Rate Checker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 520px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.5;
+      color: #222;
+      background: #f7f8fb;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 0.25em;
+    }
+    label {
+      display: block;
+      margin: 16px 0 6px;
+      font-weight: 600;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      border: 1px solid #c4c7d0;
+      border-radius: 6px;
+      background: #fff;
+    }
+    button {
+      margin-top: 18px;
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      background: #2b6cb0;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #265a9a;
+    }
+    .result {
+      margin-top: 24px;
+      padding: 20px;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .red {
+      color: #941a1a;
+      background: #ffe5e5;
+      border: 1px solid #f5a0a0;
+    }
+    .yellow {
+      color: #624200;
+      background: #fff7d6;
+      border: 1px solid #f3db8f;
+    }
+    .green {
+      color: #1b5e20;
+      background: #e7f4e6;
+      border: 1px solid #9fd59a;
+    }
+    .note {
+      margin-top: 16px;
+      color: #555;
+      font-size: 0.95rem;
+    }
+    .info-card {
+      margin-top: 22px;
+      padding: 18px 20px;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid #d3d6e0;
+      box-shadow: 0 8px 20px rgba(45, 55, 72, 0.08);
+      color: #2c3e50;
+      line-height: 1.6;
+    }
+    .info-card h2 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 1.15rem;
+    }
+    .info-card p {
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Exchange Rate Checker</h1>
+  <p>Enter the Google exchange rate and the shop's exchange rate, then check how far apart they are.</p>
+
+  <label for="googleRate">Google rate</label>
+  <input id="googleRate" type="number" step="any" min="0" placeholder="e.g. 1.12" />
+
+  <label for="shopRate">Shop rate</label>
+  <input id="shopRate" type="number" step="any" min="0" placeholder="e.g. 1.08" />
+
+  <button id="calculateBtn">Calculate percentage difference</button>
+
+  <div id="result" class="result">Enter values and click the button.</div>
+  <div class="note">Formula: (Google Rate − Shop Rate) / Google Rate × 100</div>
+
+  <div class="info-card">
+    <h2>What the result means</h2>
+    <p><strong>Less than 2.5%</strong> means the shop rate is close to the Google rate.</p>
+    <p><strong>Between 2.5% and 3%</strong> means the shop rate is moderately different.</p>
+    <p><strong>More than 3%</strong> means the shop rate is significantly different from Google.</p>
+    <p>This helps you quickly judge whether the exchange shop rate is reasonable.</p>
+  </div>
+
+  <script>
+    const googleRateInput = document.getElementById('googleRate');
+    const shopRateInput = document.getElementById('shopRate');
+    const resultEl = document.getElementById('result');
+    const calculateBtn = document.getElementById('calculateBtn');
+
+    function formatNumber(value) {
+      return Number(value).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    function setResult(text, styleClass) {
+      resultEl.textContent = text;
+      resultEl.className = 'result ' + styleClass;
+    }
+
+    function calculateDifference() {
+      const googleRate = parseFloat(googleRateInput.value);
+      const shopRate = parseFloat(shopRateInput.value);
+
+      if (Number.isNaN(googleRate) || Number.isNaN(shopRate) || googleRate <= 0) {
+        setResult('Please enter valid positive values for both rates.', 'yellow');
+        return;
+      }
+
+      const diff = ((googleRate - shopRate) / googleRate) * 100;
+      const diffText = formatNumber(diff) + '%';
+
+      if (diff > 3) {
+        setResult('Difference: ' + diffText + ' — Shop rate is far from Google rate.', 'red');
+      } else if (diff >= 2.5) {
+        setResult('Difference: ' + diffText + ' — Shop rate is moderately different.', 'yellow');
+      } else {
+        setResult('Difference: ' + diffText + ' — Shop rate is close to Google rate.', 'green');
+      }
+    }
+
+    calculateBtn.addEventListener('click', calculateDifference);
+
+    [googleRateInput, shopRateInput].forEach(input => {
+      input.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          calculateDifference();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
