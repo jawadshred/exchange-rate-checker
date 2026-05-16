@@ -36,6 +36,26 @@
     .select-row label {
       margin-bottom: 6px;
     }
+    .input-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .input-row input[type="number"] {
+      flex: 1 1 200px;
+    }
+    .input-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      flex: 1 1 160px;
+    }
+    .input-actions button {
+      flex: 1 1 100px;
+      margin-top: 0;
+      width: auto;
+    }
     select,
     input[type="number"] {
       width: 100%;
@@ -56,6 +76,12 @@
       background: #2b6cb0;
       color: white;
       cursor: pointer;
+    }
+    .secondary-button {
+      background: #6b7280;
+    }
+    .secondary-button:hover {
+      background: #4b5563;
     }
     button:hover {
       background: #265a9a;
@@ -149,7 +175,13 @@
   </div>
 
   <label for="googleRate">Market rate</label>
-  <input id="googleRate" type="number" step="any" min="0" placeholder="Loading rate..." />
+  <div class="input-row">
+    <input id="googleRate" type="number" step="any" min="0" placeholder="Loading rate..." />
+    <div class="input-actions">
+      <button type="button" id="clearMarketRate" class="secondary-button">Clear</button>
+      <button type="button" id="fetchMarketRateBtn" class="secondary-button">Fetch rate</button>
+    </div>
+  </div>
   <div class="note">Formula: (Market Rate − Shop Rate) / Market Rate × 100</div>
 
   <label for="shopRate">Shop rate</label>
@@ -175,6 +207,8 @@
     const shopRateInput = document.getElementById('shopRate');
     const resultEl = document.getElementById('result');
     const calculateBtn = document.getElementById('calculateBtn');
+    const clearMarketRateBtn = document.getElementById('clearMarketRate');
+    const fetchMarketRateBtn = document.getElementById('fetchMarketRateBtn');
 
     function formatNumber(value) {
       return Number(value).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -238,6 +272,14 @@
         calculateDifference();
       }
     });
+
+    clearMarketRateBtn.addEventListener('click', () => {
+      googleRateInput.value = '';
+      googleRateInput.focus();
+      setResult('Market rate cleared. Type a new rate or click Fetch rate to refresh.', 'yellow');
+    });
+
+    fetchMarketRateBtn.addEventListener('click', fetchMarketRate);
 
     baseCurrencySelect.addEventListener('change', fetchMarketRate);
     targetCurrencySelect.addEventListener('change', fetchMarketRate);
